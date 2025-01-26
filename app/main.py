@@ -1,9 +1,16 @@
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../')))
+
+from core.services.search_service import get_stations_by_postal_code
+from core.services.feedback_service import get_feedback_for_station, insert_feedback
 import streamlit as st
-from queries import get_stations_by_postal_code, get_feedback_for_station, insert_feedback
 import pandas as pd
 import folium
 from streamlit_folium import st_folium
-import sqlite3
+
+
+
 st.title("Charging Stations Finder 🚗⚡")
 
 # Input for postal code
@@ -39,7 +46,7 @@ if postal_code:
             # Create a Folium map
             m = folium.Map(
                 location=[stations["latitude"].mean(), stations["longitude"].mean()],
-                zoom_start=15
+                zoom_start=13
             )
 
             # Add markers for each station
@@ -53,11 +60,24 @@ if postal_code:
                     <a href="{row['google_maps_url']}" target="_blank">Open in Google Maps</a>
                 </div>
                 """
-                folium.Marker(
-                    location=[row['latitude'], row['longitude']],
-                    popup=folium.Popup(popup_html, max_width=300),
-                    tooltip=f"{row['operator']} ({row['street']} {row['house_number']})"
-                ).add_to(m)
+                try:
+                    folium.Marker(
+                        location=[row['latitude'], row['longitude']],
+                        popup=folium.Popup(popup_html, max_width=300),
+                        tooltip=f"{row['operator']} ({row['street']} {row['house_number']})",
+                        icon=folium.Icon(icon="map-marker", color="red")
+                    ).add_to(m)
+                except Exception:
+                    folium.CircleMarker(
+                        location=[row['latitude'], row['longitude']],
+                        radius=10,
+                        color="blue",
+                        fill=True,
+                        fill_color="blue",
+                        fill_opacity=0.6,
+                        popup=folium.Popup(popup_html, max_width=300),
+                        tooltip=f"{row['operator']} ({row['street']} {row['house_number']})"
+                    ).add_to(m)
 
             # Render the Folium map
             st.subheader("Charging Stations Map")
@@ -101,24 +121,14 @@ if postal_code:
             submit_feedback = st.button("Submit Feedback")
     
             if submit_feedback:
-                conn = sqlite3.connect('charging_stations.db')
-                query = """
-                INSERT INTO Feedback (station_id, user_id, rating, comments, timestamp)
-                VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP);
-                """
-                conn.execute(query, (selected_station_id, user_id, rating, comments))
-                conn.commit()
+                insert_feedback(selected_station_id, user_id, rating, comments)
                 st.success("Thank you for your feedback!")
-        #------------stop
+                #------------stop
         else:
             st.write("No valid charging stations found for this postal code.")
         
     else:
         st.write("No charging stations found for the entered postal code.")
-
-
-
-
 
 
  #   if st.sidebar.button("Submit Feedback"):

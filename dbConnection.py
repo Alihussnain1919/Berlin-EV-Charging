@@ -47,7 +47,7 @@ CREATE TABLE IF NOT EXISTS ChargingStations (
 cursor.execute('''
 CREATE TABLE IF NOT EXISTS ChargingPoints (
     point_id INTEGER PRIMARY KEY AUTOINCREMENT,
-    station_id INTEGER,
+    station_id INTEGER FOREIGN KEY,
     plug_type TEXT,
     power_kw REAL,
     public_key TEXT,
@@ -69,7 +69,7 @@ CREATE TABLE IF NOT EXISTS Users (
 cursor.execute('''
 CREATE TABLE IF NOT EXISTS Feedback (
     feedback_id INTEGER PRIMARY KEY AUTOINCREMENT,
-    station_id INTEGER,
+    station_id INTEGER FOREIGN KEY,
     user_id INTEGER,
     rating INTEGER,
     comments TEXT,
