@@ -6,7 +6,7 @@ import pandas as pd
 def get_stations_by_postal_code(postal_code):
     conn = sqlite3.connect('charging_stations.db')
     query = '''
-    SELECT operator, street, house_number, city, state, latitude, longitude
+    SELECT station_id, operator, street, house_number, city, state, latitude, longitude
     FROM ChargingStations
     WHERE postal_code = ?
     '''
@@ -18,9 +18,16 @@ def get_stations_by_postal_code(postal_code):
 def get_feedback_for_station(station_id):
     conn = sqlite3.connect('charging_stations.db')
     query = '''
-    SELECT user_id, rating, comments, timestamp
-    FROM Feedback
-    WHERE station_id = ?
+     SELECT 
+        f.user_id,
+        cs.operator AS station_name,
+        f.rating,
+        f.comments,
+        f.timestamp
+    FROM Feedback f
+    JOIN ChargingStations cs 
+        ON f.station_id = cs.station_id
+    WHERE f.station_id = ?;
     '''
     df = pd.read_sql_query(query, conn, params=(station_id,))
     conn.close()

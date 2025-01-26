@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS Residents (
 )
 ''')
 
-# Create ChargingStations table
+# Create ChargingStations table //
 cursor.execute('''
 CREATE TABLE IF NOT EXISTS ChargingStations (
     station_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -99,7 +99,6 @@ stations_df = stations_df.rename(columns={
     "Art der Ladeeinrichung": "charging_type",
     "Anzahl Ladepunkte": "number_of_points"
 })
-
 stations_df.to_sql('ChargingStations', conn, if_exists='replace', index=False)
 
 charging_points = []
@@ -120,3 +119,45 @@ VALUES (?, ?, ?, ?)
 
 conn.commit()
 
+# Step 1: Create a new table with the corrected schema
+cursor.execute('''
+CREATE TABLE IF NOT EXISTS ChargingStations_New (
+    station_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    operator TEXT,
+    street TEXT,
+    house_number TEXT,
+    postal_code INTEGER,
+    city TEXT,
+    state TEXT,
+    district TEXT,
+    latitude FLOAT,
+    longitude FLOAT,
+    installation_date TEXT,
+    nominal_power REAL,
+    charging_type TEXT,
+    number_of_points INTEGER
+);
+''')
+
+# Step 2: Copy data from the old table to the new table
+cursor.execute('''
+INSERT INTO ChargingStations_New (
+    operator, street, house_number, postal_code, city, state, district,
+    latitude, longitude, installation_date, nominal_power, charging_type,
+    number_of_points
+)
+SELECT 
+    operator, street, house_number, postal_code, city, state, district,
+    latitude, longitude, installation_date, nominal_power, charging_type,
+    number_of_points
+FROM ChargingStations;
+''')
+
+# Step 3: Drop the old table
+cursor.execute('DROP TABLE ChargingStations;')
+
+# Step 4: Rename the new table to replace the old one
+cursor.execute('ALTER TABLE ChargingStations_New RENAME TO ChargingStations;')
+
+# Commit changes
+conn.commit()
