@@ -206,6 +206,61 @@ def make_streamlit_electric_Charging_resid(dfr1, dfr2):
     
 
 
+def search_and_zoom_map(postal_code, gdf_lstat3, map_object):
+    """
+    Filters charging stations by postal code and updates the map view.
+
+    Args:
+        postal_code (str): The postal code to filter by.
+        gdf_lstat3 (GeoDataFrame): Charging station data with geometries.
+        map_object (folium.Map): Map object to update.
+
+    Returns:
+        int: Number of charging stations in the postal code.
+    """
+    gdf_lstat3['PLZ'] = gdf_lstat3['PLZ'].astype(str).str.strip()
+    print("postal code", gdf_lstat3['PLZ'])
+    filtered_data = gdf_lstat3[gdf_lstat3['PLZ'] == postal_code]
+    print(filtered_data, "filter")
+    
+    if filtered_data.empty:
+        st.warning(f"No charging stations found for postal code: {postal_code}")
+        return 0
+
+    # Ensure filtered_data is a GeoDataFrame
+    if not isinstance(filtered_data, gpd.GeoDataFrame):
+        filtered_data = gpd.GeoDataFrame(filtered_data, geometry='geometry')
+
+    # Get the bounding box of the filtered data to zoom in
+    minx, miny, maxx, maxy = filtered_data.total_bounds
+    center_lat = (miny + maxy) / 2
+    center_lon = (minx + maxx) / 2
+
+    # Calculate the zoom level dynamically by the size of the bounding box, within a valid range
+    width = maxx - minx
+    height = maxy - miny
+    
+    # Default zoom level
+    zoom_level = 15
+
+    # Adjust zoom level based on the bounding box size
+    if width > 0.05 or height > 0.05:  # Larger area -> zoom out
+        zoom_level = 13
+    elif width < 0.01 and height < 0.01:  # Smaller area -> zoom in
+        zoom_level = 18  # Max zoom level for small areas
+
+    # Set map location and zoom level
+    map_object.location = [center_lat, center_lon]
+    map_object.zoom_start = zoom_level
+
+    # Add markers for the filtered charging stations
+    for _, row in filtered_data.iterrows():
+        folium.Marker(
+            location=[row.geometry.centroid.y, row.geometry.centroid.x],
+            popup=f"Charging Station\nPostal Code: {row['PLZ']}"
+        ).add_to(map_object)
+
+    return len(filtered_data)
 
 
 
