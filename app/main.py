@@ -15,7 +15,6 @@ def render_map(stations):
     """
     Renders a Folium map with markers for charging stations.
     """
-    # Create a Folium map centered around the average latitude/longitude
     map_center = [stations[0].latitude, stations[0].longitude]
     m = folium.Map(location=map_center, zoom_start=13)
 
@@ -64,19 +63,22 @@ def provide_feedback(selected_station_id):
     submit_feedback = st.button("Submit Feedback")
 
     if submit_feedback:
-        insert_feedback(selected_station_id, user_id, rating, comments)
-        st.success("Thank you for your feedback!")
+        if not comments.strip():  # Check if the comments are empty or only contain whitespace
+            st.error("Please enter a comment before submitting.")
+        else:
+            insert_feedback(selected_station_id, user_id, rating, comments)
+            st.success("Thank you for your feedback!")
 
 
 # --- Streamlit App ---
 st.title("Charging Stations Finder 🚗⚡")
 
-# Login State
+# Check if the user is logged in
 if "logged_in" not in st.session_state:
     st.session_state["logged_in"] = False
 
+# If not logged in, show the login form
 if not st.session_state["logged_in"]:
-    # Login Form
     st.subheader("Login to Access the App")
     name = st.text_input("Name")  # Updated to match the `name` field in the database
     password_hash = st.text_input("Password", type="password")  # Updated to match the `password_hash` field in the database
@@ -87,14 +89,15 @@ if not st.session_state["logged_in"]:
             st.session_state["logged_in"] = True
             st.session_state["name"] = name
             st.success("Login successful!")
+            st.rerun() # This will force the page to reload and show the content for logged-in users
         else:
             st.error("Invalid username or password")
 else:
-    # Logout Button
+    # Show logout button if logged in
     st.sidebar.button("Logout", on_click=lambda: st.session_state.update({"logged_in": False, "name": ""}))
     st.sidebar.write(f"Logged in as: **{st.session_state['name']}**")
 
-    # Input for postal code
+    # Once logged in, show the search for postal code input
     postal_code = st.text_input("Enter Postal Code to Find Charging Stations:")
 
     if postal_code:
