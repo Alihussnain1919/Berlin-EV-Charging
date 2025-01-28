@@ -7,6 +7,7 @@ from core.services.feedback_service import get_feedback_for_station, insert_feed
 import streamlit as st
 import folium
 from streamlit_folium import st_folium
+from core.services.auth_service import authenticate_user
 
 
 # --- Helper Functions ---
@@ -70,39 +71,62 @@ def provide_feedback(selected_station_id):
 # --- Streamlit App ---
 st.title("Charging Stations Finder 🚗⚡")
 
-# Input for postal code
-postal_code = st.text_input("Enter Postal Code to Find Charging Stations:")
+# Login State
+if "logged_in" not in st.session_state:
+    st.session_state["logged_in"] = False
 
-if postal_code:
-    # Fetch charging stations by postal code
-    stations = get_stations_by_postal_code(postal_code)
+if not st.session_state["logged_in"]:
+    # Login Form
+    st.subheader("Login to Access the App")
+    name = st.text_input("Name")  # Updated to match the `name` field in the database
+    password_hash = st.text_input("Password", type="password")  # Updated to match the `password_hash` field in the database
+    login_button = st.button("Login")
 
-    if stations:  # Check if any stations were found
-        st.markdown(f"### Total Charging Stations Found: **{len(stations)}**")
+    if login_button:
+        if authenticate_user(name, password_hash):
+            st.session_state["logged_in"] = True
+            st.session_state["name"] = name
+            st.success("Login successful!")
+        else:
+            st.error("Invalid username or password")
+else:
+    # Logout Button
+    st.sidebar.button("Logout", on_click=lambda: st.session_state.update({"logged_in": False, "name": ""}))
+    st.sidebar.write(f"Logged in as: **{st.session_state['name']}**")
 
-        # Render the map
-        map_object = render_map(stations)
-        st.subheader("Charging Stations Map")
-        st_folium(map_object, width=700, height=500)
+    # Input for postal code
+    postal_code = st.text_input("Enter Postal Code to Find Charging Stations:")
 
-        # Sidebar for selecting a charging station
-        st.sidebar.header("Available Charging Stations")
-        station_options = {
-            station.station_id: f"{station.operator} ({station.get_full_address()})"
-            for station in stations
-        }
-        selected_station_id = st.sidebar.selectbox(
-            "Select a Charging Station",
-            options=station_options.keys(),
-            format_func=lambda x: station_options[x]
-        )
+    if postal_code:
+        # Fetch charging stations by postal code
+        stations = get_stations_by_postal_code(postal_code)
 
-        # Display feedback for the selected station
-        st.subheader(f"Feedback for {station_options[selected_station_id]}")
-        display_feedback(selected_station_id)
+        if stations:  # Check if any stations were found
+            st.markdown(f"### Total Charging Stations Found: **{len(stations)}**")
 
-        # Allow the user to provide feedback
-        provide_feedback(selected_station_id)
+            # Render the map
+            map_object = render_map(stations)
+            st.subheader("Charging Stations Map")
+            st_folium(map_object, width=700, height=500)
 
-    else:
-        st.write("No charging stations found for the entered postal code.")
+            # Sidebar for selecting a charging station
+            st.sidebar.header("Available Charging Stations")
+            station_options = {
+                station.station_id: f"{station.operator} ({station.get_full_address()})"
+                for station in stations
+            }
+            selected_station_id = st.sidebar.selectbox(
+                "Select a Charging Station",
+                options=station_options.keys(),
+                format_func=lambda x: station_options[x]
+            )
+
+            # Display feedback for the selected station
+            st.subheader(f"Feedback for {station_options[selected_station_id]}")
+            display_feedback(selected_station_id)
+
+            # Allow the user to provide feedback
+            provide_feedback(selected_station_id)
+
+        else:
+            st.write("No charging stations found for the entered postal code.")
