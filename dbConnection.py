@@ -62,6 +62,7 @@ CREATE TABLE IF NOT EXISTS Users (
     name TEXT,
     email TEXT UNIQUE,
     password_hash TEXT
+    role TEXT
 )
 ''')
 
