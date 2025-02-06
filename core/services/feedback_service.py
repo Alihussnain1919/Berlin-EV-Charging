@@ -53,9 +53,9 @@ def insert_feedback(station_id, user_id, rating, comments):
     conn.commit()
     conn.close()
 
-conn = get_connection()
-query = '''select* from Users'''
+# conn = get_connection()
+# query = '''select* from Users'''
 
-df= pd.read_sql_query(query, conn)
-print(df)
-conn.close()
+# df= pd.read_sql_query(query, conn)
+# print(df)
+# conn.close()
