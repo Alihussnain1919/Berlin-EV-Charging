@@ -1,6 +1,5 @@
 # Electric Vehicle (EV) Charging Station Visualization Program
 
-## Task 8: Documentation
 
 ### I. Program Structure
 The program processes and visualizes data related to electric vehicle charging stations and population distribution in Berlin. The goal is to generate a Streamlit application to identify areas requiring additional EV charging stations.
